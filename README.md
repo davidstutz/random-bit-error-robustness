@@ -80,8 +80,7 @@ Also see `environment.yml` for a (not minimal) export of the used environment.
 
 To prepare experiments, datasets need to be downloaded and their paths need to be specified:
 
-* Check `common/paths.py` and adapt the following variables appropriately:
-
+Check `common/paths.py` and adapt the following variables appropriately:
 
     # Absolute path to the data directory:
     # BASE_DATA/mnist will contain MNIST
@@ -95,7 +94,7 @@ To prepare experiments, datasets need to be downloaded and their paths need to b
     # Absolute path to code directory (this should point to the root directory of this repository)
     BASE_CODE = '/absolute/path/to/root/of/this/repository/'
 
-* Download datasets and copy to the appropriate places:
+Download datasets and copy to the appropriate places:
 
 | Dataset | Download |
 |---------|----------|
