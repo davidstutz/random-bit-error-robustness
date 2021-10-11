@@ -444,6 +444,15 @@ After evaluating the random bit errors above, the predicted probabilities are au
 in `BASE_EXPERIMENTS` and evaluated using `common.eval.AdversarialWeightsEvaluation` (as described above) or following
 the code provided in `common.experiments.eval`.
 
+After training the following four models the results obtained using the Jupyter notebook should like as follows:
+
+![Results.](results.png?raw=true "Results.")
+
+* `81unfp_normal_training`
+* `q81auunrfp_normal_training`
+* `q801auunrfp_normal_training`
+* `q801auunrfp_simple_average_weight_training_bit_random_g001_pop1`
+
 ## License
 
 This repository includes code from:
