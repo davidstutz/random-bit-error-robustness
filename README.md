@@ -453,6 +453,10 @@ After training the following four models the results obtained using the Jupyter 
 * `q801auunrfp_normal_training`
 * `q801auunrfp_simple_average_weight_training_bit_random_g001_pop1`
 
+Pre-trained and -evaluated models can be downloaded [here](https://nextcloud.mpi-klsb.mpg.de/index.php/s/tTJjybKk86pEHNC)
+(1.2GB) and allow to produce the above plot. The results can be downloaded and copied as is into the `BASE_EXPERIMENTS`
+directory.
+
 ## License
 
 This repository includes code from:

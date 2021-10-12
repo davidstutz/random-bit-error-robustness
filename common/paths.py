@@ -7,17 +7,17 @@ import os
 # Base directory for data and experiments.
 BASE_DATA = os.getenv('BASE_DATA', False)
 if BASE_DATA is False:
-    BASE_DATA = '/BS/dstutz/work/data/'
+    BASE_DATA = 'data/'
     #log('[Warning] BASE_DATA environment variable not defined, using default', LogLevel.WARNING)
 
 BASE_EXPERIMENTS = os.getenv('BASE_EXPERIMENTS', False)
 if BASE_EXPERIMENTS is False:
-    BASE_EXPERIMENTS = '/BS/dstutz2/work/experiments/'
+    BASE_EXPERIMENTS = 'experiments/'
     #log('[Warning] BASE_EXPERIMENTS environment variable not defined, using default', LogLevel.WARNING)
 
 BASE_LOGS = os.getenv('BASE_LOGS', False)
 if BASE_LOGS is False:
-    BASE_LOGS = '/BS/dstutz2/nobackup/experiments/'
+    BASE_LOGS = 'logs/'
     #log('[Warning] BASE_DATE environment variable not defined, using default', LogLevel.WARNING)
 
 # Common extension types used.

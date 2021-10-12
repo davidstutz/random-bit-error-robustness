@@ -63,7 +63,7 @@ def check_torch():
             print('CUDA seems to be available and supported.')
 
         # Might print something like
-        # BS/dstutz/work/dev-box/pip9/lib/python2.7/site-packages/torch/cuda/__init__.py:89: UserWarning:
+        # cuda/__init__.py:89: UserWarning:
         #     Found GPU0 Tesla V100-PCIE-16GB which requires CUDA_VERSION >= 8000 for
         #     optimal performance and fast startup time, but your PyTorch was compiled
         #     with CUDA_VERSION 8000. Please install the correct PyTorch binary
