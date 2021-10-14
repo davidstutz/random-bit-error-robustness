@@ -365,7 +365,7 @@ class NormalTraining(TrainingInterface):
 
         for b, (inputs, targets) in enumerate(self.testset):
             if b >= 10:
-                break;
+                break
 
             inputs = common.torch.as_variable(inputs, self.cuda)
             inputs = inputs.permute(0, 3, 1, 2)
@@ -411,7 +411,7 @@ class NormalTraining(TrainingInterface):
 
             for b, (inputs, targets) in enumerate(self.testset):
                 if b >= 10:
-                    break;
+                    break
 
                 inputs = common.torch.as_variable(inputs, self.cuda)
                 inputs = inputs.permute(0, 3, 1, 2)

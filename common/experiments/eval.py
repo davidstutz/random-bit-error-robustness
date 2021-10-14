@@ -174,7 +174,6 @@ def get_attack_evaluations(config, training_configs, attack_configs, evaluation_
                                     if adversarial_probabilities_file is not None:
                                         adversarial_probabilities = common.utils.read_hdf5(adversarial_probabilities_file, 'probabilities')
                                         if adversarial_probabilities.shape[0] < limit:
-                                            #print('LIMIT', a, limit, adversarial_probabilities.shape[0], training_config.directory, attack_config_.directory)
                                             pass
                                         else:
                                             adversarial_probabilities = adversarial_probabilities[:limit]
@@ -205,7 +204,6 @@ def get_attack_evaluations(config, training_configs, attack_configs, evaluation_
                             if adversarial_probabilities_file is not None:
                                 adversarial_probabilities = common.utils.read_hdf5(adversarial_probabilities_file, 'probabilities')
                                 if adversarial_probabilities.shape[0] < limit:
-                                    #print('LIMIT', a, limit, adversarial_probabilities.shape[0], training_config.directory, attack_config.directory)
                                     pass
                                 else:
                                     adversarial_probabilities = adversarial_probabilities[:limit]

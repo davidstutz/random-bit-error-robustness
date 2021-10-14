@@ -140,7 +140,7 @@ def features(model, testset, eval=True, loss=True, operators=None, cuda=False, l
     # should work with and without labels
     for b, data in enumerate(testset):
         if limit is not False and b >= limit:
-            break;
+            break
 
         targets = None
         if isinstance(data, tuple) or isinstance(data, list):

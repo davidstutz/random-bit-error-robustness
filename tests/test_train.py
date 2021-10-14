@@ -88,7 +88,7 @@ class TestTrainMNIST(unittest.TestCase):
 
         probabilities = common.test.test(self.model, self.testset, cuda=self.cuda)
         eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-        self.assertGreaterEqual(0.03, eval.test_error())
+        self.assertGreaterEqual(0.05, eval.test_error())
 
     def testAverageWeightsTraining(self):
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
@@ -97,27 +97,39 @@ class TestTrainMNIST(unittest.TestCase):
         augmentation = None
 
         objective = attacks.weights.UntargetedF0Objective()
-        epsilon = 0.01
-        attack = attacks.weights.GradientDescentAttack()
-        attack.base_lr = 0.01
-        attack.epochs = 2
-        attack.momentum = 0.9
-        attack.normalized = True
-        attack.backtrack = False
-        attack.initialization = attacks.weights.initializations.LInfUniformNormInitialization(epsilon)
+        epsilon = 0.3
+        clipping = 1
+        attack = attacks.weights.RandomAttack()
+        attack.epochs = 1
+        attack.initialization = attacks.weights.initializations.LayerWiseL2UniformNormInitialization(epsilon)
         attack.projection = attacks.weights.projections.SequentialProjections([
-            attacks.weights.projections.BoxProjection(-1, 1),
-            attacks.weights.projections.LInfProjection(epsilon),
+            attacks.weights.projections.BoxProjection(-clipping, clipping),
+            attacks.weights.projections.LayerWiseL2Projection(epsilon)
         ])
-        attack.norm = attacks.weights.norms.LInfNorm()
+        attack.norm = attacks.weights.norms.L2Norm()
 
         trainer = common.train.AverageWeightsTraining(self.model, self.trainset, self.testset, optimizer, scheduler, attack, objective, augmentation=augmentation, writer=writer, cuda=self.cuda)
+        trainer.projection = attacks.weights.projections.BoxProjection(-clipping, clipping)
+
+        def simple_curriculum(attack, loss, perturbed_loss, epoch):
+            if perturbed_loss < 2.15:
+                population = 1
+            else:
+                population = 0
+
+            return population, {
+                'population': population,
+                'epochs': attack.epochs,
+            }
+
+        trainer.curriculum = simple_curriculum
 
         epochs = 10
         for e in range(epochs):
             trainer.step(e)
 
         probabilities = common.test.test(self.model, self.testset, cuda=self.cuda)
+        print(probabilities)
         eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
         #self.assertGreaterEqual(0.05, eval.test_error())
         print(eval.test_error())
@@ -134,27 +146,22 @@ class TestTrainMNIST(unittest.TestCase):
         print(eval.test_error())
 
     def testAdversarialWeightsTraining(self):
-        # Not trainable right now.
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
         scheduler = common.train.get_exponential_scheduler(optimizer, batches_per_epoch=len(self.trainset))
         writer = common.summary.SummaryDictWriter()
         augmentation = None
 
         objective = attacks.weights.UntargetedF0Objective()
-        epsilon = 0.01
+        epsilon = 0.05
         clipping = 1
-        attack = attacks.weights.GradientDescentAttack()
-        attack.base_lr = 0.001
-        attack.momentum = 0.9
-        attack.epochs = 5
-        attack.normalized = True
-        attack.backtrack = False
-        attack.initialization = attacks.weights.initializations.LInfUniformNormInitialization(epsilon)
+        attack = attacks.weights.RandomAttack()
+        attack.epochs = 1
+        attack.initialization = attacks.weights.initializations.LayerWiseL2UniformNormInitialization(epsilon)
         attack.projection = attacks.weights.projections.SequentialProjections([
             attacks.weights.projections.BoxProjection(-clipping, clipping),
-            attacks.weights.projections.LInfProjection(epsilon),
+            attacks.weights.projections.LayerWiseL2Projection(epsilon)
         ])
-        attack.norm = attacks.weights.norms.LInfNorm()
+        attack.norm = attacks.weights.norms.L2Norm()
 
         trainer = common.train.AdversarialWeightsTraining(self.model, self.trainset, self.testset, optimizer, scheduler,
                                                           attack, objective, augmentation=augmentation, writer=writer, cuda=self.cuda)
@@ -218,234 +225,6 @@ class TestTrainMNIST(unittest.TestCase):
 
         eval = common.eval.CleanEvaluation(perturbed_probabilities, self.testset.dataset.labels, validation=0)
         print(eval.test_error())
-
-    def testAdversarialWeightsTrainingGN(self):
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
-        scheduler = common.train.get_exponential_scheduler(optimizer, gamma=0.5, batches_per_epoch=len(self.trainset))
-        writer = common.summary.SummaryDictWriter()
-        augmentation = None
-
-        objective = attacks.weights.UntargetedF0Objective()
-        epsilon = 0.03
-        clipping = 1
-        attack = attacks.weights.GradientDescentAttack()
-        attack.base_lr = 1
-        attack.momentum = 0
-        attack.epochs = 5
-        attack.normalization = attacks.weights.normalizations.L2Normalization()
-        attack.backtrack = False
-        attack.initialization = attacks.weights.initializations.LayerWiseL2UniformNormInitialization(epsilon)
-        attack.projection = attacks.weights.projections.SequentialProjections([
-            attacks.weights.projections.BoxProjection(-clipping, clipping),
-            attacks.weights.projections.LayerWiseL2Projection(epsilon)
-        ])
-        attack.norm = attacks.weights.norms.L2Norm()
-
-        trainer = common.train.AdversarialWeightsTraining(self.model, self.trainset, self.testset, optimizer,
-                                                          scheduler, attack, objective, augmentation=augmentation,
-                                                          writer=writer, cuda=self.cuda)
-        trainer.adversarial_statistics = True
-        trainer.projection = attacks.weights.projections.BoxProjection(-clipping, clipping)
-
-        def simple_curriculum(attack, loss, perturbed_loss, epoch):
-            population = 1
-
-            return population, {
-                'population': population,
-                'epochs': attack.epochs,
-            }
-
-        trainer.curriculum = simple_curriculum
-
-        epochs = 10
-        for e in range(epochs):
-            trainer.step(e)
-            common.state.State.checkpoint('awt_gn.pth.tar', self.model)
-
-        probabilities = common.test.test(self.model, self.testset, cuda=self.cuda)
-        eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-        test_error = eval.test_error()
-
-        attack.epochs = 25
-        robust_test_error_eval = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_eval = max(robust_test_error_eval, eval.test_error())
-
-        attack.epochs = 25
-        attack.eval = False
-        self.model.train()
-        robust_test_error_train = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            perturbed_model.train()
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda, eval=False)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_train = max(robust_test_error_train, eval.test_error())
-
-        print('clean test error', test_error)
-        print('robust test error (eval)', robust_test_error_eval)
-        print('robust test error (train)', robust_test_error_train)
-
-    def testRandomWeightsTrainingGN(self):
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
-        scheduler = common.train.get_exponential_scheduler(optimizer, gamma=0.5, batches_per_epoch=len(self.trainset))
-        writer = common.summary.SummaryDictWriter()
-        augmentation = None
-
-        objective = attacks.weights.UntargetedF0Objective()
-        epsilon = 0.3
-        clipping = 1
-        attack = attacks.weights.RandomAttack()
-        attack.epochs = 1
-        attack.initialization = attacks.weights.initializations.LayerWiseL2UniformNormInitialization(epsilon)
-        attack.projection = attacks.weights.projections.SequentialProjections([
-            attacks.weights.projections.BoxProjection(-clipping, clipping),
-            attacks.weights.projections.LayerWiseL2Projection(epsilon)
-        ])
-        attack.norm = attacks.weights.norms.L2Norm()
-
-        trainer = common.train.AdversarialWeightsTraining(self.model, self.trainset, self.testset, optimizer,
-                                                          scheduler, attack, objective, augmentation=augmentation,
-                                                          writer=writer, cuda=self.cuda)
-        trainer.adversarial_statistics = True
-        trainer.projection = attacks.weights.projections.BoxProjection(-clipping, clipping)
-
-        def simple_curriculum(attack, loss, perturbed_loss, epoch):
-            population = 1
-
-            return population, {
-                'population': population,
-                'epochs': attack.epochs,
-            }
-
-        trainer.curriculum = simple_curriculum
-
-        epochs = 10
-        for e in range(epochs):
-            trainer.step(e)
-            common.state.State.checkpoint('awt_gn.pth.tar', self.model)
-
-        probabilities = common.test.test(self.model, self.testset, cuda=self.cuda)
-        eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-        test_error = eval.test_error()
-
-        attack.epochs = 25
-        robust_test_error_eval = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_eval = max(robust_test_error_eval, eval.test_error())
-
-        attack.epochs = 25
-        attack.eval = False
-        self.model.train()
-        robust_test_error_train = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            perturbed_model.train()
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda, eval=False)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_train = max(robust_test_error_train, eval.test_error())
-
-        print('clean test error', test_error)
-        print('robust test error (eval)', robust_test_error_eval)
-        print('robust test error (train)', robust_test_error_train)
-
-    def testAdversarialWeightsTrainingBN(self):
-        self.model = models.LeNet(10, [1, 28, 28], channels=32, normalization='bn', linear=256)
-        if self.cuda:
-            self.model = self.model.cuda()
-
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
-        scheduler = common.train.get_exponential_scheduler(optimizer, gamma=0.5, batches_per_epoch=len(self.trainset))
-        writer = common.summary.SummaryDictWriter()
-        augmentation = None
-
-        objective = attacks.weights.UntargetedF0Objective()
-        epsilon = 0.03
-        clipping = 1
-        attack = attacks.weights.GradientDescentAttack()
-        attack.base_lr = 1
-        attack.momentum = 0
-        attack.epochs = 5
-        attack.normalization = attacks.weights.normalizations.L2Normalization()
-        attack.backtrack = False
-        attack.initialization = attacks.weights.initializations.LayerWiseL2UniformNormInitialization(epsilon)
-        attack.projection = attacks.weights.projections.SequentialProjections([
-            attacks.weights.projections.BoxProjection(-clipping, clipping),
-            attacks.weights.projections.LayerWiseL2Projection(epsilon)
-        ])
-        attack.norm = attacks.weights.norms.L2Norm()
-
-        trainer = common.train.AdversarialWeightsTraining(self.model, self.trainset, self.testset, optimizer,
-                                                          scheduler, attack, objective, augmentation=augmentation,
-                                                          writer=writer, cuda=self.cuda)
-        trainer.adversarial_statistics = True
-        trainer.projection = attacks.weights.projections.BoxProjection(-clipping, clipping)
-
-        def simple_curriculum(attack, loss, perturbed_loss, epoch):
-            population = 1
-
-            return population, {
-                'population': population,
-                'epochs': attack.epochs,
-            }
-
-        trainer.curriculum = simple_curriculum
-
-        epochs = 10
-        for e in range(epochs):
-            trainer.step(e)
-            common.state.State.checkpoint('awt_bn.pth.tar', self.model)
-
-        probabilities = common.test.test(self.model, self.testset, cuda=self.cuda)
-        eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-        test_error = eval.test_error()
-
-        attack.epochs = 25
-        robust_test_error_eval = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_eval = max(robust_test_error_eval, eval.test_error())
-
-        attack.epochs = 25
-        attack.eval = False
-        self.model.train()
-        robust_test_error_train = 0
-        for b, (inputs, targets) in enumerate(self.testset):
-            batchset = [(inputs, targets)]
-            perturbed_model = attack.run(self.model, batchset, objective)
-            perturbed_model.train()
-            if self.cuda:
-                perturbed_model = perturbed_model.cuda()
-            probabilities = common.test.test(perturbed_model, self.testset, cuda=self.cuda, eval=False)
-            eval = common.eval.CleanEvaluation(probabilities, self.testset.dataset.labels, validation=0)
-            robust_test_error_train = max(robust_test_error_train, eval.test_error())
-
-        print('clean test error', test_error)
-        print('robust test error (eval)', robust_test_error_eval)
-        print('robust test error (train)', robust_test_error_train)
 
 
 if __name__ == '__main__':

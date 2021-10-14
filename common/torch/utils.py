@@ -419,17 +419,6 @@ def project_ball(tensor, epsilon=1, ord=2):
     assert isinstance(tensor, torch.Tensor) or isinstance(tensor, torch.autograd.Variable), 'given tensor should be torch.Tensor or torch.autograd.Variable'
 
     if ord == 0:
-        #assert epsilon >= 0
-        # https://stackoverflow.com/questions/51433741/rearranging-a-3-d-array-using-indices-from-sorting
-        #size = list(tensor.shape)
-        #sorted, indices = torch.sort(tensor.view(tensor.size()[0], -1), dim=1, descending=True)
-        #k = int(math.ceil(epsilon))
-        #assert k > 0
-        #sorted[:, min(k, sorted.size(1) - 1):] = 0
-        #print(sorted)
-        #tensor = tensor.scatter_(dim=1, index=indices, src=sorted)
-        #tensor = tensor.view(size)
-
         assert epsilon >= 0
 
         size = list(tensor.shape)
@@ -1003,7 +992,6 @@ def noisy_classification_loss(logits, targets, reduction='mean', noise_rate=0.1,
     if is_cuda(targets):
         noisy = noisy.cuda()
     noisy_targets[noisy] = random_targets[noisy]
-    #print(torch.sum(noisy_targets != targets))
 
     if logits.size()[1] > 1:
         return torch.nn.functional.cross_entropy(logits, noisy_targets, reduction=reduction)

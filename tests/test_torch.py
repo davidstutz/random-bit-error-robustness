@@ -148,78 +148,6 @@ class TestTorch(unittest.TestCase):
                 norms = numpy.linalg.norm(samples, ord=ord, axis=1)
                 self.assertTrue(numpy.allclose(norms, epsilon))
 
-    def testInt32HammingProjectionSort(self):
-        def test(original, perturbed, epsilon=2):
-            projected = common.torch.int_hamming_projection_sort(original, perturbed, epsilon)
-
-            original_bits = common.torch.int_bits(original)
-            perturbed_bits = common.torch.int_bits(perturbed)
-            projected_bits = common.torch.int_bits(projected)
-
-            perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
-            projected_dist = common.torch.int_hamming_distance(original, projected)
-
-            print('---')
-            print(original)
-            print(perturbed)
-            print(projected)
-
-            #print(original_bits.int())
-            #print(perturbed_bits.int())
-            #print(projected_bits.int())
-
-            self.assertGreaterEqual(torch.sum(perturbed_dist).item(), torch.sum(projected_dist).item())
-            self.assertGreaterEqual(epsilon, torch.sum(projected_dist).item())
-            self.assertGreaterEqual(epsilon, torch.norm((projected - original).float(), p=0))
-
-            return projected
-
-        original = torch.IntTensor([66, 23, -11])
-        perturbed = torch.IntTensor([65, 21, -2])
-        #perturbed = common.torch.int_random_flip(original, 0.25, 0.25)
-        projected = test(original, perturbed)
-
-        for i in range(100):
-            original = torch.IntTensor(10).random_(-1000000, 1000000)
-            perturbed = common.torch.int_random_flip(original, 0.1, 0.1)
-            projected = test(original, perturbed, epsilon=5)
-
-    def testInt32HammingProjectionTopk(self):
-        def test(original, perturbed, epsilon=2):
-            projected = common.torch.int_hamming_projection_topk(original, perturbed, epsilon)
-
-            original_bits = common.torch.int_bits(original)
-            perturbed_bits = common.torch.int_bits(perturbed)
-            projected_bits = common.torch.int_bits(projected)
-
-            perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
-            projected_dist = common.torch.int_hamming_distance(original, projected)
-
-            print('---')
-            print(original)
-            print(perturbed)
-            print(projected)
-
-            #print(original_bits.int())
-            #print(perturbed_bits.int())
-            #print(projected_bits.int())
-
-            self.assertGreaterEqual(torch.sum(perturbed_dist).item(), torch.sum(projected_dist).item())
-            self.assertGreaterEqual(epsilon, torch.sum(projected_dist).item())
-            self.assertGreaterEqual(epsilon, torch.norm((projected - original).float(), p=0))
-
-            return projected
-
-        original = torch.IntTensor([66, 23, -11])
-        perturbed = torch.IntTensor([65, 21, -2])
-        #perturbed = common.torch.int_random_flip(original, 0.25, 0.25)
-        projected = test(original, perturbed)
-
-        for i in range(100):
-            original = torch.IntTensor(10).random_(-1000000, 1000000)
-            perturbed = common.torch.int_random_flip(original, 0.1, 0.1)
-            projected = test(original, perturbed, epsilon=5)
-
     def testReparameterizedBatchNorm(self):
         batch_size = 100
         trainset = torch.utils.data.DataLoader(common.datasets.MNISTTrainSet(indices=range(10000)), batch_size=batch_size, shuffle=True, num_workers=4)
@@ -261,7 +189,7 @@ class TestTorch(unittest.TestCase):
         if cuda:
             model = model.cuda()
 
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.05, momentum=0.9)
         scheduler = common.train.get_exponential_scheduler(optimizer, batches_per_epoch=len(trainset))
         writer = common.summary.SummaryDictWriter()
         augmentation = None

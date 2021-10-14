@@ -172,7 +172,6 @@ class Classifier(torch.nn.Module):
             for i in range(len(self.__layers)):
                 name = self.__layers[i]
 
-                #print(name, output.size())
                 if name == 'logits':
                     if auxiliary and self.auxiliary is not None:
                         auxiliary_output = self.auxiliary(output)

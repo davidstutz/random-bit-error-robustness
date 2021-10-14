@@ -48,11 +48,6 @@ class TestCffi(unittest.TestCase):
             perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
             projected_dist = common.torch.int_hamming_distance(original, projected)
 
-            #print('---')
-            #print(original.item(), '\t', ''.join(list(map(str, list(original_bits[0].int().numpy())))))
-            #print(perturbed.item(), '\t', ''.join(list(map(str, list(perturbed_bits[0].int().numpy())))), perturbed_dist.item())
-            #print(projected.item(), '\t', ''.join(list(map(str, list(projected_bits[0].int().numpy())))), projected_dist.item())
-
             self.assertGreaterEqual(1, projected_dist.item())
             if perturbed_dist.item() == 0:
                 self.assertEqual(0, projected_dist.item())
@@ -324,29 +319,6 @@ class TestCffi(unittest.TestCase):
 
             numpy.testing.assert_almost_equal(tensor.numpy(), flipped_tensor.numpy())
 
-    def testInt32RandomFlipProtectedOrder(self):
-        # find out order of bits layed out in memory to find MSB and LSB
-        # first values of protected bits are actually
-        protected_bits = [0]*16 + [1]*16
-        # in little endian order
-
-        # range is -2147483648 .. 2147483647
-        tensor = torch.from_numpy(numpy.array([214738364]).astype(numpy.int32))
-        bits = common.torch.int_bits(tensor)
-
-        flipped_tensor = common.torch.int_random_flip(tensor, 1., 1., protected_bits)
-        flipped_bits = common.torch.int_bits(flipped_tensor)
-
-        #print(tensor)
-        #print(flipped_tensor)
-
-        # first entry will be LSB on little-endian
-        #print(bits)
-        #print(flipped_bits)
-
-        #print(protected_bits)
-        #print(numpy.logical_xor(flipped_bits.numpy(), bits.numpy()))
-
     def testInt32MaskedRandomFlip(self):
         protected_bits = [0]*32
 
@@ -428,47 +400,6 @@ class TestCffi(unittest.TestCase):
         bits = common.torch.int_bits(tensor)
         # 0011001011010100
         self.checkBits(bits[0], '0010101101001100')
-
-    def testInt16MSBProjection(self):
-        def test(original, perturbed):
-            projected = common.torch.int_msb_projection(original, perturbed)
-
-            original_bits = common.torch.int_bits(original)
-            perturbed_bits = common.torch.int_bits(perturbed)
-            projected_bits = common.torch.int_bits(projected)
-
-            perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
-            projected_dist = common.torch.int_hamming_distance(original, projected)
-
-            #print('---')
-            #print(original.item(), '\t', ''.join(list(map(str, list(original_bits[0].int().numpy())))))
-            #print(perturbed.item(), '\t', ''.join(list(map(str, list(perturbed_bits[0].int().numpy())))), perturbed_dist.item())
-            #print(projected.item(), '\t', ''.join(list(map(str, list(projected_bits[0].int().numpy())))), projected_dist.item())
-
-            self.assertGreaterEqual(1, projected_dist.item())
-            if perturbed_dist.item() == 0:
-                self.assertEqual(0, projected_dist.item())
-
-            counter = 0
-            for i in range(16):
-                if original_bits[0, i] != projected_bits[0, i]:
-                    self.assertEqual(0, counter)
-                    counter += 1
-
-            return projected
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([7])
-        projected = test(original, perturbed)
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([6])
-        projected = test(original, perturbed)
-
-        for i in range(100):
-            original = torch.IntTensor([random.randint(-1000000, 1000000)])
-            perturbed = common.torch.int_random_flip(original, 0.25, 0.25)
-            projected = test(original, perturbed)
 
     def testInt16HammingDistance(self):
         for i in range(10):
@@ -715,28 +646,6 @@ class TestCffi(unittest.TestCase):
             flipped_tensor = common.torch.int_random_flip(tensor, 0.1, 0.1, protected_bits)
             numpy.testing.assert_almost_equal(tensor.numpy(), flipped_tensor.numpy())
 
-    def testInt16RandomFlipProtectedOrder(self):
-        # find out order of bits layed out in memory to find MSB and LSB
-        # first values of protected bits are actually
-        protected_bits = [0]*8 + [1]*8
-        # in little endian order
-
-        # range is -2147483648 .. 2147483647
-        tensor = torch.from_numpy(numpy.array([20123]).astype(numpy.int16))
-        bits = common.torch.int_bits(tensor)
-
-        flipped_tensor = common.torch.int_random_flip(tensor, 1., 1., protected_bits)
-        flipped_bits = common.torch.int_bits(flipped_tensor)
-
-        #print(tensor)
-        #print(flipped_tensor)
-
-        # first entry will be LSB on little-endian
-        #print(bits)
-        #print(flipped_bits)
-
-        #print(protected_bits)
-        #print(numpy.logical_xor(flipped_bits.numpy(), bits.numpy()))
 
     def testInt16MaskedRandomFlip(self):
         protected_bits = [0]*16
@@ -819,47 +728,6 @@ class TestCffi(unittest.TestCase):
         bits = common.torch.int_bits(tensor)
         # 0011001011010100
         self.checkBits(bits[0], '00101011')
-
-    def testInt8MSBProjection(self):
-        def test(original, perturbed):
-            projected = common.torch.int_msb_projection(original, perturbed)
-
-            original_bits = common.torch.int_bits(original)
-            perturbed_bits = common.torch.int_bits(perturbed)
-            projected_bits = common.torch.int_bits(projected)
-
-            perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
-            projected_dist = common.torch.int_hamming_distance(original, projected)
-
-            #print('---')
-            #print(original.item(), '\t', ''.join(list(map(str, list(original_bits[0].int().numpy())))))
-            #print(perturbed.item(), '\t', ''.join(list(map(str, list(perturbed_bits[0].int().numpy())))), perturbed_dist.item())
-            #print(projected.item(), '\t', ''.join(list(map(str, list(projected_bits[0].int().numpy())))), projected_dist.item())
-
-            self.assertGreaterEqual(1, projected_dist.item())
-            if perturbed_dist.item() == 0:
-                self.assertEqual(0, projected_dist.item())
-
-            counter = 0
-            for i in range(8):
-                if original_bits[0, i] != projected_bits[0, i]:
-                    self.assertEqual(0, counter)
-                    counter += 1
-
-            return projected
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([7])
-        projected = test(original, perturbed)
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([6])
-        projected = test(original, perturbed)
-
-        for i in range(100):
-            original = torch.IntTensor([random.randint(-1000000, 1000000)])
-            perturbed = common.torch.int_random_flip(original, 0.25, 0.25)
-            projected = test(original, perturbed)
 
     def testInt8HammingDistance(self):
         for i in range(10):

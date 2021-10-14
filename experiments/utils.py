@@ -13,7 +13,7 @@ def training_arguments(parser):
     Default training arguments.
 
     :param parser: argument parser
-    :type parse: argparse.ArgumentParser
+    :type parser: argparse.ArgumentParser
     """
     parser.add_argument('-n', '--normalization', type=str, dest='normalization', default='')
     parser.add_argument('-a', '--activation', type=str, dest='activation', default='relu')

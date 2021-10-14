@@ -27,7 +27,6 @@ class NormalTrainingConfig:
         self.fixed_quantization = False
         self.quantization = None
         self.projection = None
-        self.clip_factor = None
 
         # weight averaging
         self.keep_average = False

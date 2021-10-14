@@ -180,7 +180,6 @@ class NormalTrainingInterface:
         self.quantization = self.config.quantization
         self.projection = self.config.projection
         self.finetune = self.config.finetune
-        self.clip_factor = self.config.clip_factor
         self.fixed_quantization = self.config.fixed_quantization
         self.summary_histograms = self.config.summary_histograms
         self.summary_weights = self.config.summary_weights
@@ -225,41 +224,6 @@ class NormalTrainingInterface:
                 state = None
                 self.model = self.get_model()
                 assert self.model is not None
-
-                if self.clip_factor is not None:
-                    self.model.eval()
-                    if self.cuda:
-                        self.model = self.model.cuda()
-
-                    probabilities, features = common.test.features(self.model, self.testloader, limit=10, cuda=self.cuda)
-
-                    min_bounds = []
-                    max_bounds = []
-                    for feature in features:
-                        min_bounds.append(-numpy.max(numpy.abs(feature)))
-                        max_bounds.append(numpy.max(numpy.abs(feature)))
-
-                    print(min_bounds)
-                    print(max_bounds)
-                    print(self.model.layers())
-
-                    i = 0
-                    if self.model.include_clamp:
-                        i += 1
-                    if self.model.include_whiten:
-                        i += 1
-                    while i < len(features) - 1:
-                        min_bounds[i] *= self.clip_factor
-                        max_bounds[i] *= self.clip_factor
-                        i += 1
-
-                    min_bounds[-1] = -10
-                    max_bounds[-1] = 10
-
-                    projection = attacks.activations.projections.LayerWiseBoxProjection(min_bounds, max_bounds)
-                    self.model.operators = [
-                        projection
-                    ]
 
         if self.cuda:
             self.model = self.model.cuda()

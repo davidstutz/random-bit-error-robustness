@@ -372,25 +372,6 @@ def projection_simplex_pivot(v, z=1, random_state=None):
     return numpy.maximum(v - theta, 0)
 
 
-def projection_simplex_bisection(v, z=1, tau=0.0001, max_iter=1000):
-    lower = 0
-    upper = numpy.max(v)
-    current = numpy.inf
-
-    for it in xrange(max_iter):
-        if numpy.abs(current) / z < tau and current < 0:
-            break
-
-        theta = (upper + lower) / 2.0
-        w = numpy.maximum(v - theta, 0)
-        current = numpy.sum(w) - z
-        if current <= 0:
-            upper = theta
-        else:
-            lower = theta
-    return w
-
-
 def project_ball(array, epsilon=1, ord=2):
     """
     Compute the orthogonal projection of the input tensor (as vector) onto the L_ord epsilon-ball.
@@ -431,41 +412,20 @@ def project_ball(array, epsilon=1, ord=2):
 
         array = array.reshape(-1, flattened_size)
 
-        if False: #  Version 1
-            # https://github.com/ftramer/MultiRobustness/blob/master/pgd_attack.py
-            l1 = numpy.sum(numpy.abs(array), axis=1)
-            epsilons = numpy.ones((array.shape[0]))*epsilon
-            to_project = l1 > epsilons
-            if numpy.any(to_project):
-                n = numpy.sum(to_project)
-                d = array[to_project]#.reshape(n, -1)  # n * N (N=h*w*ch)
-                abs_d = numpy.abs(d)  # n * N
-                mu = -numpy.sort(-abs_d, axis=-1)  # n * N
-                cumsums = mu.cumsum(axis=-1)  # n * N
-                eps_d = epsilons[to_project]
-                js = 1.0 / numpy.arange(1, array.shape[1] + 1)
-                temp = mu - js * (cumsums - numpy.expand_dims(eps_d, -1))
-                rho = numpy.argmin(temp > 0, axis=-1)
-                theta = 1.0 / (1 + rho) * (cumsums[range(n), rho] - eps_d)
-                sgn = numpy.sign(d)
-                d = sgn * numpy.maximum(abs_d - numpy.expand_dims(theta, -1), 0)
-                array[to_project] = d.reshape(-1, array.shape[1])
-
-        if True: # Version 2
-            for i in range(array.shape[0]):
-                # compute the vector of absolute values
-                u = numpy.abs(array[i])
-                # check if v is already a solution
-                if u.sum() <= epsilon:
-                    # L1-norm is <= s
-                    continue
-                # v is not already a solution: optimum lies on the boundary (norm == s)
-                # project *u* on the simplex
-                #w = project_simplex(u, s=epsilon)
-                w = projection_simplex_sort(u, z=epsilon)
-                # compute the solution to the original problem on v
-                w *= numpy.sign(array[i])
-                array[i] = w
+        for i in range(array.shape[0]):
+            # compute the vector of absolute values
+            u = numpy.abs(array[i])
+            # check if v is already a solution
+            if u.sum() <= epsilon:
+                # L1-norm is <= s
+                continue
+            # v is not already a solution: optimum lies on the boundary (norm == s)
+            # project *u* on the simplex
+            #w = project_simplex(u, s=epsilon)
+            w = projection_simplex_sort(u, z=epsilon)
+            # compute the solution to the original problem on v
+            w *= numpy.sign(array[i])
+            array[i] = w
 
         if len(size) == 4:
             array = array.reshape(-1, size[1], size[2], size[3])

@@ -15,7 +15,6 @@ with open('%s/cffi.h' % BASE_CODE) as my_header:
 
 with open('%s/cffi.c' % BASE_CODE) as my_source:
     if debug:
-        #print('Building the debug build...')
         ffi.set_source(
             '_cffi',
             my_source.read(),
@@ -26,7 +25,6 @@ with open('%s/cffi.c' % BASE_CODE) as my_source:
     # https://stackoverflow.com/questions/22931147/stdisinf-does-not-work-with-ffast-math-how-to-check-for-infinity
     else:
         if use_openmp:
-            #print('Building for performance with OpenMP...')
             ffi.set_source(
                 '_cffi',
                 my_source.read(),
@@ -34,7 +32,6 @@ with open('%s/cffi.c' % BASE_CODE) as my_source:
                 extra_link_args=['-fopenmp'],
             )
         else:
-            #print('Building for performance without OpenMP...')
             ffi.set_source('_cffi',
                 my_source.read(),
                 extra_compile_args=['-O3','-march=native'],

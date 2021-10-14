@@ -29,8 +29,6 @@ class MLP(Classifier):
 
         super(MLP, self).__init__(N_class, resolution, **kwargs)
 
-        assert activation in ['', 'relu', 'sigmoid', 'tanh', 'leaky_relu', 'leaky_tanh', 'softsign']
-
         self.units = units
         """ ([int]) Units. """
 
@@ -44,6 +42,7 @@ class MLP(Classifier):
         """ (str) Dropout. """
 
         activation_layer = get_activation(self.activation)
+        assert activation_layer is not None
 
         # not overwriting self.units!
         units = [reduce(mul, self.resolution, 1)] + self.units

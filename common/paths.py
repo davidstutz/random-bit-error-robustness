@@ -17,7 +17,7 @@ if BASE_EXPERIMENTS is False:
 
 BASE_LOGS = os.getenv('BASE_LOGS', False)
 if BASE_LOGS is False:
-    BASE_LOGS = 'logs/'
+    BASE_LOGS = 'experiments/'
     #log('[Warning] BASE_DATE environment variable not defined, using default', LogLevel.WARNING)
 
 # Common extension types used.

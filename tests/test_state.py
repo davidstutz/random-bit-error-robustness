@@ -8,64 +8,6 @@ import models
 import common.state
 
 
-import torch
-import numpy
-
-
-class TestNet(models.Classifier):
-    """
-    LeNet classifier.
-    """
-
-    def __init__(self, N_class, resolution=(1, 32, 32), **kwargs):
-        """
-        Initialize classifier.
-
-        :param N_class: number of classes to classify
-        :type N_class: int
-        :param resolution: resolution (assumed to be square)
-        :type resolution: int
-        """
-
-        super(TestNet, self).__init__()
-
-        self.resolution = resolution
-        self.N_class = N_class
-        self.kwargs = kwargs
-        self.__layers = []
-
-        logits = torch.nn.Linear(numpy.prod(resolution), self.N_class)
-        self.append_layer('logits', logits)
-
-    def append_layer(self, name, layer):
-        """
-        Add a layer.
-
-        :param name: layer name
-        :type name: str
-        :param layer: layer
-        :type layer: torch.nn.Module
-        """
-
-        setattr(self, name, layer)
-        self.__layers.append(name)
-
-    def forward(self, image):
-        """
-        Forward pass, takes an image and outputs the predictions.
-
-        :param image: input image
-        :type image: torch.autograd.Variable
-        :return: logits
-        :rtype: torch.autograd.Variable
-        """
-
-        output = image
-        for name in self.__layers:
-            output = getattr(self, name)(output)
-        return output
-
-
 class TestState(unittest.TestCase):
     def setUp(self):
         self.filepath = 'test.pth.tar'
@@ -73,15 +15,13 @@ class TestState(unittest.TestCase):
             os.unlink(self.filepath)
 
     def testSimple(self):
-
-        net = TestNet(10)
+        net = models.MLP(10, units=[100])
         print(net)
         state = common.state.State(net)
         state.save(self.filepath)
 
         state = common.state.State.load(self.filepath)
         loaded_model = state.model
-
 
     def testModels(self):
         model_classes = [
@@ -175,6 +115,114 @@ class TestState(unittest.TestCase):
 
         self.assertEqual(original_epoch, loaded_epoch)
 
+    def testLeNet(self):
+        resolutions = [
+            [1, 2, 2],
+            [1, 3, 3],
+            [1, 4, 4],
+            [1, 5, 5],
+            [1, 4, 5],
+            [1, 5, 4],
+            [1, 27, 32],
+            [1, 32, 27],
+            [1, 32, 32],
+            [3, 32, 32],
+        ]
+        channels = [8, 26]
+        activations = [
+            'relu',
+            'sigmoid',
+        ]
+        normalizations = [
+            '',
+            'bn',
+        ]
+
+        clamps = [
+            True,
+            False
+        ]
+
+        scales_and_whitens = [
+            (False, False),
+            (True, False),
+            (False, True),
+        ]
+
+        classes = 10
+        for resolution in resolutions:
+            for channel in channels:
+                for activation in activations:
+                    for normalization in normalizations:
+                        for clamp in clamps:
+                            for scale_and_whiten in scales_and_whitens:
+                                original_model = models.LeNet(classes, resolution, clamp=clamp, scale=scale_and_whiten[0], whiten=scale_and_whiten[1], channels=channel, activation=activation, normalization=normalization)
+                                for parameters in original_model.parameters():
+                                    parameters.data.zero_()
+
+                                common.state.State.checkpoint(self.filepath, original_model)
+                                state = common.state.State.load(self.filepath)
+                                loaded_model = state.model
+
+                                for parameters in loaded_model.parameters():
+                                    self.assertEqual(torch.sum(parameters).item(), 0)
+
+    def testMLP(self):
+        resolutions = [
+            [1, 2, 2],
+            [1, 3, 3],
+            [1, 4, 4],
+            [1, 5, 5],
+            [1, 4, 5],
+            [1, 5, 4],
+            [1, 27, 32],
+            [1, 32, 27],
+            [1, 32, 32],
+            [3, 32, 32],
+        ]
+        units = [
+            [10],
+            [10, 10, 10, 10],
+            [1000],
+        ]
+        activations = [
+            'relu',
+            'sigmoid',
+        ]
+        normalizations = [
+            '',
+            'bn',
+        ]
+
+        clamps = [
+            True,
+            False
+        ]
+
+        scales_and_whitens = [
+            (False, False),
+            (True, False),
+            (False, True),
+        ]
+
+        classes = 10
+        for resolution in resolutions:
+            for unit in units:
+                for activation in activations:
+                    for normalization in normalizations:
+                        for clamp in clamps:
+                            for scale_and_whiten in scales_and_whitens:
+                                original_model = models.MLP(classes, resolution, clamp=clamp, scale=scale_and_whiten[0], whiten=scale_and_whiten[1], units=unit, activation=activation, normalization=normalization)
+                                for parameters in original_model.parameters():
+                                    parameters.data.zero_()
+
+                                common.state.State.checkpoint(self.filepath, original_model)
+                                state = common.state.State.load(self.filepath)
+                                loaded_model = state.model
+
+                                for parameters in loaded_model.parameters():
+                                    self.assertEqual(torch.sum(parameters).item(), 0)
+
     def testResNet(self):
         resolutions = [
             [3, 32, 32],
@@ -225,6 +273,25 @@ class TestState(unittest.TestCase):
 
                                 for parameters in loaded_model.parameters():
                                     self.assertEqual(torch.sum(parameters).item(), 0)
+
+    def testModelAuxiliary(self):
+        original_model = models.LeNet(10, [1, 32, 32])
+        original_model.auxiliary = models.MLP(4, [256], units=[182])
+        for parameters in original_model.parameters():
+            parameters.data.zero_()
+
+        state = common.state.State(original_model)
+        state.save(self.filepath)
+
+        state = common.state.State.load(self.filepath)
+        loaded_model = state.model
+
+        self.assertEqual(loaded_model.__class__.__name__, original_model.__class__.__name__)
+        self.assertListEqual(loaded_model.resolution, original_model.resolution)
+
+        for parameters in loaded_model.parameters():
+            self.assertEqual(torch.sum(parameters).item(), 0)
+        self.assertNotEqual(loaded_model.auxiliary, None)
 
     def tearDown(self):
         if os.path.exists(self.filepath):

@@ -130,7 +130,6 @@ class AlternatingWeightsTraining(AdversarialWeightsTraining):
 
             for i in range(self.population):
                 # optional: set objective targets or so?
-                #self.attack.progress = common.progress.ProgressBar()
                 perturbed_model = self.attack.run(forward_model, batchset, self.objective)
 
                 # This is a perturbation based on the original eval model!
@@ -139,12 +138,10 @@ class AlternatingWeightsTraining(AdversarialWeightsTraining):
 
                 perturbed_loss = self.loss(perturbed_logits, targets)
                 perturbed_error = common.torch.classification_error(perturbed_logits, targets)
-                #print(loss.item(), error.item())
 
                 population_perturbed_loss += perturbed_loss.item()
                 population_perturbed_error += perturbed_error.item()
 
-                #perturbed_loss = torch.min(perturbed_loss, torch.ones_like(perturbed_loss)*3)
                 perturbed_loss.backward()
 
                 # take average of gradients
@@ -163,7 +160,6 @@ class AlternatingWeightsTraining(AdversarialWeightsTraining):
                     backward_buffers = dict(self.model.named_buffers())
                     for key in perturbed_buffers.keys():
                         if key.find('running_var') >= 0 or key.find('running_mean') >= 0:
-                            #print('perturbed', key, torch.mean(backward_buffers[key].data.float()).item(), torch.mean(perturbed_buffers[key].data.float()).item())
                             backward_buffers[key].data = 0.1*perturbed_buffers[key].data + 0.9*backward_buffers[key].data
                         if key.find('num_batches_tracked') >= 0:
                             backward_buffers[key].data += 1

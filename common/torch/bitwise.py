@@ -342,7 +342,6 @@ def int_hamming_projection_topk(original, perturbed, epsilon):
     k = int(math.ceil(epsilon))
     k = min(k, difference.size(0) - 1)
     assert k > 0, k
-    #print(difference)
     _, top_indices = topk(difference, k=k)
 
     projection_top_original = original[top_indices]

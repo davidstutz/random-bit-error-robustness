@@ -26,7 +26,7 @@ def get_normalization2d(normalization, planes):
         'fixedgn',
     ]
 
-    num_group_alternatives = [32, 24, 16]
+    num_group_alternatives = [32, 24, 16, 8]
     for i in range(len(num_group_alternatives)):
         num_groups = min(num_group_alternatives[i], planes // 2)
         if planes % num_groups == 0:

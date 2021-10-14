@@ -31,8 +31,6 @@ class LeNet(Classifier):
 
         super(LeNet, self).__init__(N_class, resolution, **kwargs)
 
-        assert activation in ['relu', 'sigmoid', 'tanh', 'leaky_relu', 'leaky_tanh', 'softsign', 'pact']
-
         # the constructor parameters must be available as attributes for state to work
         self.channels = channels
         """ (int) Channels. """
@@ -61,6 +59,7 @@ class LeNet(Classifier):
             output_channels = self.channels if layer == 0 else layers[layer - 1] * 2
 
             conv = torch.nn.Conv2d(input_channels, output_channels, kernel_size=5, stride=1, padding=2, bias=self.include_bias)
+            #torch.nn.init.normal_(conv.weight, mean=0, std=0.1)
             common.torch.kaiming_normal_(conv.weight, nonlinearity=activation, scale=self.init_scale)
             if self.include_bias:
                 torch.nn.init.constant_(conv.bias, 0)

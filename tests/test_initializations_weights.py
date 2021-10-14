@@ -96,8 +96,6 @@ class TestInitializationsWeights(unittest.TestCase):
             bin = int(dist - 1)//10
             histogram[bin] += 1
 
-        #print(histogram)
-
     def testL0UniformNormInitializationProbability(self):
         model = TestNet()
         n, _, _, _ = common.torch.parameter_sizes(model)
@@ -130,10 +128,8 @@ class TestInitializationsWeights(unittest.TestCase):
             layers = list(range(len(list(perturbed_model.parameters()))))
             initialization(model, perturbed_model, layers)
             dist += norm(model, perturbed_model, layers)
-            #print(norm(model, perturbed_model, layers))
         dist /= N
         epsilon = int(n*probability)
-        #print(epsilon, dist)
         self.assertGreaterEqual(epsilon + 100, dist)
         self.assertGreaterEqual(dist, epsilon - 100)
 
@@ -158,7 +154,6 @@ class TestInitializationsWeights(unittest.TestCase):
                 dist_0[i, j] = norm_0(model, perturbed_model, layers)
                 dist_inf[i, j] = norm_inf(model, perturbed_model, layers)
 
-        #print(dist_0, dist_inf)
         for j in range(N):
             self.assertEqual(0, numpy.sum(dist_0[:, j] - dist_0[0, j]))
             self.assertAlmostEqual(0, numpy.sum(dist_inf[:, j] - dist_inf[0, j]))
@@ -271,13 +266,11 @@ class TestInitializationsWeights(unittest.TestCase):
             initialization(model, perturbed_model, layers, quantization, quantization_contexts)
             dist_i = norm(model, perturbed_model, layers, quantization, quantization_contexts)
             dist2_i = norm2(model, perturbed_model, layers)
-            #print(dist_i, n, dist_i/(n*quantization.type_precision), dist2_i, dist2_i/dist_i)
             dist += dist_i
 
         dist /= N
         dist /= n*quantization.type_precision
         self.assertAlmostEqual(dist, probability, 3)
-        #print(dist)
 
     def testRandomBitInitializationProbability6Bit(self):
         model = TestNet(D=200, L=25)#.cuda()
@@ -305,13 +298,11 @@ class TestInitializationsWeights(unittest.TestCase):
             initialization(model, perturbed_model, layers, quantization, quantization_contexts)
             dist_i = norm(model, perturbed_model, layers, quantization, quantization_contexts)
             dist2_i = norm2(model, perturbed_model, layers)
-            #print(dist_i, n, dist_i/(n*quantization.repr_precision), dist2_i, dist2_i/dist_i)
             dist += dist_i
 
         dist /= N
         dist /= n*quantization.repr_precision
         self.assertAlmostEqual(dist, probability, 2)
-        #print(dist)
 
     def testRandomBitMSBInitializationProbability(self):
         model = TestNet(D=200, L=25)#.cuda()
@@ -341,14 +332,12 @@ class TestInitializationsWeights(unittest.TestCase):
             dist_i = norm(model, perturbed_model, layers, quantization, quantization_contexts)
             dist2_i = norm2(model, perturbed_model, layers)
             dist3_i = norm3(model, perturbed_model, layers)
-            #print(dist_i, n, dist_i/(n*quantization.type_precision), dist2_i, dist2_i/dist_i, dist3_i)
             self.assertAlmostEqual(dist3_i, 1, places=2)
             dist += dist_i
 
         dist /= N
         dist /= n*quantization.type_precision
         self.assertAlmostEqual(dist, probability/16, 3)
-        #print(dist)
 
     def testRandomBitLSBInitializationProbability(self):
         model = TestNet(D=200, L=25)#.cuda()
@@ -379,14 +368,12 @@ class TestInitializationsWeights(unittest.TestCase):
             dist_i = norm(model, perturbed_model, layers, quantization, quantization_contexts)
             dist2_i = norm2(model, perturbed_model, layers)
             dist3_i = norm3(model, perturbed_model, layers)
-            #print(dist_i, n, dist_i/(n*quantization.type_precision), dist2_i, dist2_i/dist_i, dist3_i)
             self.assertGreaterEqual(0.5, dist3_i)
             dist += dist_i
 
         dist /= N
         dist /= n*quantization.type_precision
         self.assertAlmostEqual(dist, lsb*probability/16, 3)
-        #print(dist)
 
 
 if __name__ == '__main__':

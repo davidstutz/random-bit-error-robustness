@@ -43,7 +43,7 @@ class TestAttacksWeightsMNISTMLP(unittest.TestCase):
 
             trainer = common.train.NormalTraining(cls.model, cls.trainloader, cls.testloader, optimizer, scheduler, augmentation=augmentation, writer=writer,
                                                   cuda=cls.cuda)
-            for e in range(5):
+            for e in range(10):
                 trainer.step(e)
 
             common.state.State.checkpoint(cls.getModelFile(), cls.model, optimizer, scheduler, e)
@@ -51,7 +51,7 @@ class TestAttacksWeightsMNISTMLP(unittest.TestCase):
             cls.model.eval()
             probabilities = common.test.test(cls.model, cls.testloader, cuda=cls.cuda)
             eval = common.eval.CleanEvaluation(probabilities, cls.testloader.dataset.labels, validation=0)
-            assert 0.075 > eval.test_error(), '0.05 !> %g' % eval.test_error()
+            assert 0.1 > eval.test_error(), '0.1 !> %g' % eval.test_error()
             assert numpy.mean(numpy.max(probabilities, axis=1)) > 0.9
 
         cls.model.eval()
@@ -102,18 +102,6 @@ class TestAttacksWeightsMNISTMLP(unittest.TestCase):
 
         error_rate /= attempts
         return error_rate
-
-    def testHessianAttack(self):
-        epsilon = 0.001
-        attack = attacks.weights.HessianAttack()
-        attack.progress = common.progress.ProgressBar()
-        attack.k = 0
-        attack.initialization = None#attacks.weights.initializations.LInfUniformNormInitialization(epsilon)
-        attack.projection = attacks.weights.projections.LInfProjection(relative_epsilon=epsilon)
-        attack.norm = attacks.weights.norms.LInfNorm()
-
-        error_rate = self._testAttackPerformance(attack)
-        self.assertGreaterEqual(error_rate, 0.8)
 
     def testRandomAttackLInf(self):
         error_rates = []
@@ -176,35 +164,6 @@ class TestAttacksWeightsMNISTMLP(unittest.TestCase):
             adaptive_error_rate = self._testQuantizedAttackPerformance(attack)
 
             self.assertGreaterEqual(fixed_error_rate, adaptive_error_rate)
-
-    def testQuantizedRandomAttackBitPattern(self):
-        for bits in [8, 16, 32]:
-            max_val = 2
-            quantization = common.quantization.AlternativeFixedPointQuantization(max_abs_range=max_val, precision=bits)
-
-            attack = attacks.weights.RandomAttack()
-            attack.progress = common.progress.ProgressBar()
-            attack.quantization = quantization
-            attack.epochs = 10
-            attack.initialization = attacks.weights.initializations.BitPatternInitialization(0.01, 1)
-            attack.projection = attacks.weights.projections.BoxProjection(-max_val, max_val)
-            attack.norm = attacks.weights.norms.HammingNorm()
-            error_rate = self._testQuantizedAttackPerformance(attack)
-            print(error_rate)
-
-    def testAdaptiveQuantizedRandomAttackBitPattern(self):
-        for bits in [8, 16, 32]:
-            quantization = common.quantization.AdaptiveAlternativeFixedPointQuantization(precision=bits)
-
-            attack = attacks.weights.RandomAttack()
-            attack.progress = common.progress.ProgressBar()
-            attack.quantization = quantization
-            attack.epochs = 10
-            attack.initialization = attacks.weights.initializations.BitPatternInitialization(0.01, 1)
-            attack.projection = None
-            attack.norm = attacks.weights.norms.HammingNorm()
-            error_rate = self._testQuantizedAttackPerformance(attack)
-            print(error_rate)
 
 
 class TestAttacksWeightsMNISTResNet(TestAttacksWeightsMNISTMLP):

@@ -34,58 +34,12 @@ class TestCupy(unittest.TestCase):
         tensor = torch.ones((1), dtype=torch.int32)*142156
         tensor = tensor.cuda()
         bits = common.torch.int_bits(tensor)
-        #self.checkBits(bits[0], '00000000000000100010101101001100')
         self.checkBits(bits[0], '00110010110101000100000000000000')
 
         tensor = torch.ones((1), dtype=torch.int32)*4342421
         tensor = tensor.cuda()
         bits = common.torch.int_bits(tensor)
-        #self.checkBits(bits[0], '00000000010000100100001010010101')
         self.checkBits(bits[0], '10101001010000100100001000000000')
-
-    def testInt32MSBProjection(self):
-        def test(original, perturbed):
-            original = original.cuda()
-            perturbed = perturbed.cuda()
-
-            projected = common.torch.int_msb_projection(original, perturbed)
-
-            original_bits = common.torch.int_bits(original)
-            perturbed_bits = common.torch.int_bits(perturbed)
-            projected_bits = common.torch.int_bits(projected)
-
-            perturbed_dist = common.torch.int_hamming_distance(original, perturbed)
-            projected_dist = common.torch.int_hamming_distance(original, projected)
-
-            #print('---')
-            #print(original.item(), '\t', ''.join(list(map(str, list(original_bits[0].int().cpu().numpy())))))
-            #print(perturbed.item(), '\t', ''.join(list(map(str, list(perturbed_bits[0].int().cpu().numpy())))), perturbed_dist.item())
-            #print(projected.item(), '\t', ''.join(list(map(str, list(projected_bits[0].int().cpu().numpy())))), projected_dist.item())
-
-            self.assertGreaterEqual(1, projected_dist.item())
-            if perturbed_dist.item() == 0:
-                self.assertEqual(0, projected_dist.item())
-
-            counter = 0
-            for i in range(32):
-                if original_bits[0, i] != projected_bits[0, i]:
-                    self.assertEqual(0, counter)
-                    counter += 1
-
-            return projected
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([7])
-        projected = test(original, perturbed)
-
-        original = torch.IntTensor([15])
-        perturbed = torch.IntTensor([6])
-        projected = test(original, perturbed)
-
-        for i in range(100):
-            original = torch.IntTensor([random.randint(-1000000, 1000000)])
-            perturbed = common.torch.int_random_flip(original, 0.25, 0.25)
-            projected = test(original, perturbed)
 
     def testInt32HammingDistance(self):
         for i in range(10):
@@ -263,7 +217,6 @@ class TestCupy(unittest.TestCase):
         flipped_tensor = common.torch.int_flip(tensor, mask.view(N, P))
         self.assertEqual(0, torch.sum(common.torch.int_hamming_distance(tensor, flipped_tensor)).item())
 
-        #indices = numpy.random.choice(N*P, size=epsilon, replace=False)
         indices = [69, 22, 93, 95, 26, 29, 77, 44, 57, 14]
         numpy.testing.assert_array_equal(numpy.sort(indices), numpy.unique(indices))
         mask[indices] = True
@@ -271,11 +224,6 @@ class TestCupy(unittest.TestCase):
 
         flipped_tensor = common.torch.int_flip(tensor, mask.view(N, P))
         flipped_bits = common.torch.int_bits(flipped_tensor)
-        #print(indices)
-        #print(tensor, bits)
-        #print(flipped_tensor, flipped_bits)
-        #print(common.torch.int_hamming_distance(tensor, flipped_tensor))
-        #print(common.torch.int_hamming_distance(tensor, flipped_tensor))
 
         self.assertEqual(epsilon, torch.sum(common.torch.int_hamming_distance(tensor, flipped_tensor)).item())
 
@@ -336,29 +284,6 @@ class TestCupy(unittest.TestCase):
             flipped_tensor = common.torch.int_random_flip(tensor, 0.1, 0.1, protected_bits)
 
             numpy.testing.assert_almost_equal(tensor.cpu().numpy(), flipped_tensor.cpu().numpy())
-
-    def testInt32RandomFlipProtectedOrder(self):
-        # find out order of bits layed out in memory to find MSB and LSB
-        # first values of protected bits are actually
-        protected_bits = [0]*16 + [1]*16
-        # in little endian order
-
-        # range is -2147483648 .. 2147483647
-        tensor = torch.from_numpy(numpy.array([214738364]).astype(numpy.int32)).cuda()
-        bits = common.torch.int_bits(tensor)
-
-        flipped_tensor = common.torch.int_random_flip(tensor, 1., 1., protected_bits)
-        flipped_bits = common.torch.int_bits(flipped_tensor)
-
-        #print(tensor)
-        #print(flipped_tensor)
-
-        # first entry will be LSB on little-endian
-        #print(bits)
-        #print(flipped_bits)
-
-        #print(protected_bits)
-        #print(numpy.logical_xor(flipped_bits.cpu().numpy(), bits.cpu().numpy()))
 
     def testInt32MaskedRandomFlip(self):
         protected_bits = [0] * 32
